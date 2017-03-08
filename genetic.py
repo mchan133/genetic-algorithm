@@ -3,16 +3,12 @@ import random
 import time
 import sys
 
-'''
-Notes:
-try 64 1's with seed 0 - interesting
-'''
 
 DEBUG = False
 
-goal = "1011111111111111111111111111111111111111111111111111111111111111"  # unknown to algorithm
+goal = "1010101010101010101010101010101010101010101010101010101010101010"  # unknown to algorithm
 GIVE_UP = 10000  # give up after x iterations
-POOL_SIZE = 10;
+POOL_SIZE = 10
 
 
 NUM_VARS = len(goal)
@@ -31,18 +27,19 @@ def find_solution(rand_state=None):
         new_pool = []
 
         evaluations = eval_pool(gene_pool)
+
         add_elite(gene_pool, new_pool, evaluations)
         select(gene_pool, new_pool, evaluations)
 
-        new_pool = crossover(2, new_pool)
-        new_pool = mutate(2, new_pool)
+        crossover(2, new_pool)
+        mutate(2, new_pool)
 
         new_vals = eval_pool(new_pool)
-        new_pool, new_vals = flip_heuristic(2, new_pool, new_vals)
+        flip_heuristic2(2, new_pool, new_vals)
 
         #record(gene_pool)  # records chnges in pool to history
 
-        if DEBUG:
+        if False and DEBUG:
             print(counter, "old:",gene_pool, evaluations)
             print(counter, "new:",new_pool, new_vals)
         gene_pool = new_pool
@@ -94,7 +91,7 @@ def record(gene_pool):
 
 def initialize_states(gene_pool, argv=None):
 
-    if argv:  # add support for user input states
+    if argv:  #TODO: add support for user input states
 
         for i in range(POOL_SIZE):
             gene_pool[i] = create_state()
@@ -161,17 +158,10 @@ def select(gene_pool, new_pool, evaluations):
 
 
 def crossover(safe, new_pool):
-    #print(new_pool)
-    temp = []
-    for i in range(safe):
-        temp.append(new_pool[i])
-
     for i in range(safe, POOL_SIZE, 2):
-        a, b = cross(new_pool[i],new_pool[i+1])
-        temp.append(a)
-        temp.append(b)
-
-    return temp
+        a, b = cross(new_pool[i], new_pool[i+1])
+        new_pool[i]   = a
+        new_pool[i+1] = b
 
 
 def cross(x, y):
@@ -192,50 +182,75 @@ def cross(x, y):
     return (c1, c2)
 
 def mutate(safe, new_pool):
-    temp = []
-    for i in range(safe):
-        temp.append(new_pool[i])
-    
     for i in range(safe, POOL_SIZE):
         if flip_coin(.9):
             mutant = ""
+
             for j in range(len(new_pool[i])):
                 if flip_coin():
                     mutant += str(1 - int(new_pool[i][j]))
                 else:
                     mutant += new_pool[i][j]
-            temp.append(mutant)
-        else:
-            temp.append(new_pool[i])
 
-    return temp
+            new_pool[i] = mutant
 
+
+# the actual flip heuristic (local changes)
+# now, should instantly solve convex optimizations
+def flip_heuristic2(safe, new_pool, evaluations):
+
+    for i in range(safe, POOL_SIZE):
+        improvement = True
+        order = [j for j in range(NUM_VARS)]
+
+        while improvement:  # keeps going as long as there is improvement
+            improvement  = False
+            random.shuffle(order)
+
+            for j in order:
+                new_str, new_eval = eval_flip(new_pool[i], j, evaluations[i])
+                if new_str:  # eval flip returns None if not better
+                    new_pool[i] = new_str
+                    evaluations[i] = new_eval
+                    improvement = True
+
+    return None
+
+def eval_flip(string, index, evaluation):
+    # flipping bit at index i
+    new_str = string[:index] + ("1" if string[index]=="0" else "0") + string[(index+1):]
+
+    new_eval = evaluate(new_str)
+    if new_eval >= evaluation:
+        return (new_str, new_eval)
+     
+    return (None, None)
+
+
+'''
+# not currently using
 def flip_heuristic(safe, new_pool, evaluations):
-    if DEBUG: print("flip:",new_pool)
-    temp = []
-    for i in range(safe):
-        temp.append(new_pool[i])
-
     for i in range(safe, POOL_SIZE):
         flipped = flip_bits(new_pool[i])
         value = evaluate(flipped)
+
         if value >= evaluations[i]:
             evaluations[i] = value
-            temp.append(flipped)
-        else:
-            temp.append(new_pool[i])
-
-    if DEBUG: print("flip:", temp)
-    return (temp, evaluations)
-
-
+            new_pool[i] = flipped
 def flip_bits(string):
     new_str = ""
     for i in range(NUM_VARS):
-        new_str += "1" if string[i]=="0" else "1"
-
+        new_str += "1" if string[i]=="0" else "0"
     return new_str
-    
+'''
+
+
+def read_cnf(file):
+
+
+
+    return (None)
+
 
 
 
@@ -245,17 +260,5 @@ def flip_bits(string):
 if __name__ == '__main__':
 
     find_solution(rand_state=0)
-
-    #l = ["hi","bye"]
-
-    #def flip(l):
-    #    temp = l[1]
-    #    l[1] = l[0]
-    #    l[0] = temp
-    #    l.append("!")
-    #    l[2] = "!!"
-
-    #flip(l)
-    #print(l)
 
 
