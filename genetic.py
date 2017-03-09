@@ -4,26 +4,41 @@ import time
 import sys
 
 
-DEBUG = False
+# TODO: accept user args for states, give up, etc
+# TODO: set up signal handler for Ctrl-C
+DEBUG = True
 
-goal = "1010101010101010101010101010101010101010101010101010101010101010"  # unknown to algorithm
-GIVE_UP = 10000  # give up after x iterations
+history = []  # a record of states
+GIVE_UP = 100  # give up after x iterations
 POOL_SIZE = 10
 
+NUM_VARS = 0
+NUM_CLAUSES = 0
+CNF = [] #TODO: fix evaluate function
 
-NUM_VARS = len(goal)
-history = []  # a record of states
 
+def find_solution(variables, cnf, rand_state=None):
 
-def find_solution(rand_state=None):
+    global NUM_VARS
+    global NUM_CLAUSES
+    global CNF
+
+    NUM_VARS = variables
+    NUM_CLAUSES = len(cnf)
+    CNF = cnf
+    print(variables)
+
     if rand_state != None:
         random.seed(rand_state)
 
     gene_pool = ["" for i in range(POOL_SIZE)]
     initialize_states(gene_pool, sys.argv)  # random starting states
+    if DEBUG: print(gene_pool)
+    if DEBUG: print(len(gene_pool[0]))
     
     counter = 0
     while counter < GIVE_UP:
+        print("iteration", counter)
         new_pool = []
 
         evaluations = eval_pool(gene_pool)
@@ -44,17 +59,31 @@ def find_solution(rand_state=None):
             print(counter, "new:",new_pool, new_vals)
         gene_pool = new_pool
 
-        if evaluate(gene_pool[0]) == NUM_VARS:
+        if evaluate(gene_pool[0]) == NUM_CLAUSES:
             print(">> PROBLEM SATISFIED at iteration " + str(counter))
             print(">> With solution:", gene_pool[0])
-            print(">> Satisfied (" + str(new_vals[0]) + "/" + str(NUM_VARS) +") clauses.")
+            print(">> Satisfied (" + str(new_vals[0]) + "/" + str(NUM_CLAUSES) +") clauses.")
             sys.exit(0)
 
         counter += 1
 
     print(">> GAVE UP after " + str(GIVE_UP) + " tries.")
     print(">> Current Best:", gene_pool[0])
-    print(">> Satisfied (" + str(new_vals[0]) + "/" + str(NUM_VARS) +") clauses.")
+    print(">> Satisfied (" + str(new_vals[0]) + "/" + str(NUM_CLAUSES) +") clauses.")
+    print("UNSATISFIED CLAUSES: (1-indexed)")
+    for i in range(len(CNF)):
+        if not satisfied(CNF[i], gene_pool[0]):
+            print(str(i+1) + ":\t", CNF[i], "\t", readable(gene_pool[0]))
+
+
+def readable(string):
+    new_str = ""
+
+    for i in range(len(string)):
+        if i%5 == 0: new_str += " "
+        new_str += string[i]
+    
+    return new_str
 
 
 def flip_coin(p=.5):
@@ -109,13 +138,16 @@ def create_state():
     return state
 
 
+#TODO: to be replaced with cnf evaluation function for sat problems
 def evaluate(state):
-    result = 0
-    for i in range(NUM_VARS):
-        if state[i] == goal[i]:
-            result += 1
+    #result = 0
+    #for i in range(NUM_CLAUSES):
+    #    if state[i] == goal[i]:
+    #        result += 1
 
-    return result
+    #return result
+    return cnf_eval(CNF, state)
+
 
 
 def eval_pool(pool):
@@ -212,7 +244,7 @@ def flip_heuristic2(safe, new_pool, evaluations):
                 if new_str:  # eval flip returns None if not better
                     new_pool[i] = new_str
                     evaluations[i] = new_eval
-                    improvement = True
+                    # improvement = True
 
     return None
 
@@ -227,7 +259,6 @@ def eval_flip(string, index, evaluation):
     return (None, None)
 
 
-'''
 # not currently using
 def flip_heuristic(safe, new_pool, evaluations):
     for i in range(safe, POOL_SIZE):
@@ -242,16 +273,54 @@ def flip_bits(string):
     for i in range(NUM_VARS):
         new_str += "1" if string[i]=="0" else "0"
     return new_str
-'''
 
 
-def read_cnf(file):
+# right now, assuming that lines end with zero, one clause per line
+def read_cnf(file_name):
+    f = open(file_name, "r")
 
+    lines = f.read().splitlines()
+    variables = 0
+    clauses = 0
 
+    for i in range(len(lines)):
+        if lines[i][0] == 'p':  # found problem line
+            variables, clauses = map(int, lines[i].split()[2:])
+            print(variables, clauses)
 
-    return (None)
+            lines = lines[(i+1):]
+            break;
 
+    cnf = []
+    for i in range(clauses):
+        cnf.append(list(map(int, lines[i].split())))
 
+    for clause in cnf: # removes 0 from the end (assumption)
+        if clause[-1] == 0:
+            clause.pop()
+
+    return (variables, cnf)
+
+def cnf_eval(cnf, state):
+    sat_clauses = 0
+
+    for i in range(len(cnf)):
+        sat = satisfied(cnf[i], state)
+        #if DEBUG: print(i, sat_clauses, "c:",cnf[i],"s:",state, sat)
+        if sat:
+            sat_clauses += 1
+
+    return sat_clauses
+
+# simple, doesn't tell you how satisfied the clause is (don't think that matters)
+def satisfied(clause, state):
+    for i in range(len(clause)):
+        # (if the variable is true) != (if the variable is negated)
+        truthy = (state[abs(clause[i])-1] == "1") != (abs(clause[i]) != clause[i])
+        if truthy:
+            return True
+
+    return False
 
 
 
@@ -259,6 +328,7 @@ def read_cnf(file):
 
 if __name__ == '__main__':
 
-    find_solution(rand_state=0)
+    variables, cnf = read_cnf("uf20-91/uf20-09.cnf")
+    find_solution(variables, cnf, rand_state=0)
 
 
