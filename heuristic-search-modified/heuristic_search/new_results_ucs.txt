@@ -1,0 +1,1 @@
+grid#	st/gl#	heur	m_f(B)	exp	time(s)	dist

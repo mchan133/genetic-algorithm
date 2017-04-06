@@ -1,0 +1,9 @@
+coverage==4.3.4
+pep8==1.7.0
+pkutils==0.13.4
+py==1.4.32
+pygame==1.9.3
+pytest==3.0.5
+pytest-cov==2.4.0
+pytest-mock==1.5.0
+semver==2.7.4

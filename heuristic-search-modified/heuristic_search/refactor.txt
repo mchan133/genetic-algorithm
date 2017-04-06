@@ -1,0 +1,49 @@
+Original:
+=========
+From astar.py:
+	calc_cost(terrain, current, neighbor)
+	cost_of(charlist, diagonal)
+	cost_function(terrain, parent_grid, neighbor)
+	in_bounds(point, r, c)
+	traverse_path(parent_grid, goal)
+	astar_search(grid, start, goal, heuristic=None, weight=1)
+	h_functionX(cell, goal)
+	print_a_grid(grid, pretty_print=True)
+
+From grid.py:
+	global values
+	create_grid(filename='test.txt', gridlist=None, path=None, astar=None)
+	draw_line(surf, begin, end, color=START, lw=2)
+	draw_path(surf, path, parents=None)
+	color_cells(surf, lines, start, goal)
+	read_grid_from_file(filename)
+	convert_to_grid(lines)
+	run_search(mode=True, filename=None, rand_state=None, heuristic=0, weight=1)
+
+From gridfunctions.py:
+class Grid:
+    def __init__(self, rows, cols, rand_state=None, add_blocked=True,
+		add_htt=True, n_anchors=8, p=0.5, add_highways=True, n_highways=4,
+		h_length=100, h_segment=20)
+    def print_grid(self, pretty_print=False)
+    def add_hardtraverse(self, n_anchors=8, p=0.5)
+    def add_highways(self, n_highways=4, h_length=100, h_segment=20)
+    def generate_probability(self, p)
+    def build_highway(self, h_length, h_segment)
+    def has_conflicts(self, highway, highwaylist=None, h_length=100)
+    def check_conflict(self, segment1, segment2)
+    def is_highway_cell(self, row, col)
+    def is_htt_cell(self, row, col)
+    def is_blocked_cell(self, row, col)
+    def add_blocked_cells(self)
+    def add_start_goal_cells(self)
+    def print_grid_to_file(self, filename)
+    def replace_start_and_goal(self)
+
+
+Revisions Desired:
+	Priority Queue Implementation
+	Memory Statistics - (actual bytes)
+	More Object-Oriented approach to search (f function)
+	Optimizations (time-wise)
+	UI reorganization - testbench too
